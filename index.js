@@ -1,5 +1,8 @@
 const express = require("express");
 const path = require("path");
+const passport = require("./config/passport");
+const bodyParser = require("body-parser");
+const cors = require("cors");
 require("dotenv").config();
 
 
@@ -9,6 +12,8 @@ require("dotenv").config();
 // Middlewares
 // --------------------
 const app = express();
+app.use(passport.initialize());
+app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 
