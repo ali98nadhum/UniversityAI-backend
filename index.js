@@ -4,6 +4,7 @@ const passport = require("./config/passport");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 require("dotenv").config();
+const AdminRoutes = require("./Routes/AdminRoutes/adminAllRoutes");
 
 
 
@@ -15,6 +16,11 @@ const app = express();
 app.use(passport.initialize());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
+
+
+
+// 🔗  All Routes
+app.use("/api/v1/admin", AdminRoutes);
 
 
 
