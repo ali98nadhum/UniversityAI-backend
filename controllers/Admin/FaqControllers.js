@@ -1,6 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-const { pipeline, cos_sim } = require("@xenova/transformers");
+const { getVector } = require("../../helpers/embeddingService");
 
 
 
