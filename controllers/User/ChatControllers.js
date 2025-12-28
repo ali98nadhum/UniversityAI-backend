@@ -11,6 +11,7 @@ const { pipeline, cos_sim } = require("@xenova/transformers");
 const passport = require("./config/passport");
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const { askQuestion } = require("../../helpers/semanticSearch");
 
 
 
@@ -21,4 +22,14 @@ const prisma = new PrismaClient();
 // @method POST
 // @access public ( for logged in users )
 // ==================================
+module.exports.startChat = async (req, res) => {
+     const { message } = req.body;
+
+  if (!message) {
+    return res.status(400).json({ error: "Message is required" });
+  }
+
+  const result = await askQuestion(message);
+  res.json(result);
+}
 
