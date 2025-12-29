@@ -6,7 +6,13 @@ const { cos_sim } = require("@xenova/transformers");
 const { askDeepSeek } = require("./AskDeepSeek");
 
 
-async function askQuestion(message) {
+/**
+ * Processes a question with optional conversation history
+ * @param {string} message - The current user message
+ * @param {Array} conversationHistory - Array of previous messages in format [{role: "user"|"assistant", content: "..."}]
+ * @returns {Promise<Object>} - Response object with from and answer fields
+ */
+async function askQuestion(message, conversationHistory = []) {
   const userVector = await getVector(message);
 
   const allFaq = await prisma.fAQ.findMany();
@@ -27,11 +33,11 @@ async function askQuestion(message) {
 
   console.log(`🔍 Similarity Score: ${bestScore.toFixed(4)}`);
 
-  if (bestScore > 0.75 && bestMatch) {
+  if (bestScore > 0.80 && bestMatch) {
     return { from: "university", answer: bestMatch.answer };
   }
 
-  return await askDeepSeek(message);
+  return await askDeepSeek(message, conversationHistory);
 }
 
 module.exports = { askQuestion };

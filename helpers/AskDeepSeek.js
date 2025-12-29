@@ -1,12 +1,27 @@
 const axios = require("axios");
 
-async function askDeepSeek(message) {
+/**
+ * Sends a message to DeepSeek AI with optional conversation history
+ * @param {string} message - The current user message
+ * @param {Array} conversationHistory - Array of previous messages in format [{role: "user"|"assistant", content: "..."}]
+ * @returns {Promise<Object>} - Response object with from and answer fields
+ */
+async function askDeepSeek(message, conversationHistory = []) {
   try {
+    // Build messages array with history + current message
+    const messages = [
+      ...conversationHistory.map(msg => ({
+        role: msg.role === "user" ? "user" : "assistant",
+        content: msg.content,
+      })),
+      { role: "user", content: message },
+    ];
+
     const response = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
       {
         model: "deepseek/deepseek-r1",
-        messages: [{ role: "user", content: message }],
+        messages: messages,
       },
       {
         headers: {
