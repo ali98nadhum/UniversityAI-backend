@@ -7,22 +7,38 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
+// CHANGE: Extend roles to support students and guests in addition to admins
 enum Role {
-    USER
+    STUDENT
+    GUEST
     ADMIN
     SUPER_ADMIN
 }
 
+// CHANGE: Extend User model to support student credentials and profile
 model User {
-    id           Int           @id @default(autoincrement())
-    email        String        @unique
-    name         String?
-    googleId     String        @unique
-    avatar       String?
-    blocked      Boolean       @default(false)
-    role         Role          @default(USER)
-    createdAt    DateTime      @default(now())
-    updatedAt    DateTime      @updatedAt
+    id            Int           @id @default(autoincrement())
+    email         String?       @unique
+    // For student login
+    universityId  String?       @unique
+    passwordHash  String?
+
+    // Common profile fields
+    name          String?
+    department    String?
+    stage         String?
+    avatar        String?
+
+    // For Google guest login (optional)
+    googleId      String?       @unique
+
+    blocked       Boolean       @default(false)
+    // STUDENT | GUEST | ADMIN | SUPER_ADMIN
+    role          Role          @default(STUDENT)
+    createdAt     DateTime      @default(now())
+    updatedAt     DateTime      @updatedAt
+
+    // Chat history (only used for students in controllers)
     conversations Conversation[]
 }
 

@@ -18,12 +18,14 @@ passport.use(
         });
 
         if (!user) {
+          // CHANGE: Create Google users as GUEST role
           user = await prisma.user.create({
             data: {
               googleId: profile.id,
-              email: profile.emails[0].value,
+              email: profile.emails?.[0]?.value,
               name: profile.displayName,
-              avatar: profile.photos[0].value,
+              avatar: profile.photos?.[0]?.value,
+              role: 'GUEST',
             },
           });
         }

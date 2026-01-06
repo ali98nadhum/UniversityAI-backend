@@ -122,14 +122,15 @@ module.exports.getConversationMessages = async (req, res) => {
 };
 
 // ==================================
-// @desc Send a message (create new conversation or continue existing)
+// @desc Send a message (role-aware)
 // @route /api/v1/client/chat
 // @method POST
-// @access private (logged in users)
+// @access private (logged in users: STUDENT or GUEST)
 // ==================================
 module.exports.sendMessage = async (req, res) => {
   try {
     const userId = req.user?.id;
+    const role = req.user?.role;
     const { message, conversationId } = req.body;
 
     if (!userId) {
@@ -140,90 +141,136 @@ module.exports.sendMessage = async (req, res) => {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    let conversation;
+    // CHANGE: Build userContext for personalized AI responses (students only)
+    const userContext =
+      role === "STUDENT"
+        ? {
+            role,
+            name: req.user.name || null,
+            department: req.user.department || null,
+            stage: req.user.stage || null,
+          }
+        : {
+            role: "GUEST",
+          };
 
-    // If conversationId is provided, verify it belongs to the user
-    if (conversationId) {
-      conversation = await prisma.conversation.findFirst({
-        where: {
-          id: parseInt(conversationId),
-          userId,
+    // ==================================
+    // Branch 1: STUDENT → persistent chat history
+    // ==================================
+    if (role === "STUDENT") {
+      let conversation;
+
+      // If conversationId is provided, verify it belongs to the user
+      if (conversationId) {
+        conversation = await prisma.conversation.findFirst({
+          where: {
+            id: parseInt(conversationId),
+            userId,
+          },
+        });
+
+        if (!conversation) {
+          return res.status(404).json({ error: "Conversation not found" });
+        }
+      } else {
+        // Create a new conversation if none provided
+        conversation = await prisma.conversation.create({
+          data: {
+            userId,
+            title:
+              message.substring(0, 50) ||
+              `Chat ${new Date().toLocaleDateString()}`,
+          },
+        });
+      }
+
+      // Save user message
+      const userMessage = await prisma.message.create({
+        data: {
+          conversationId: conversation.id,
+          role: "user",
+          content: message,
         },
       });
 
-      if (!conversation) {
-        return res.status(404).json({ error: "Conversation not found" });
-      }
-    } else {
-      // Create a new conversation if none provided
-      conversation = await prisma.conversation.create({
+      // Get conversation history for context
+      const previousMessages = await prisma.message.findMany({
+        where: { conversationId: conversation.id },
+        orderBy: { createdAt: "asc" },
+        take: -50, // Limit to last 50 messages for context
+      });
+
+      // Format history for AI (exclude current message)
+      const conversationHistory = previousMessages
+        .filter((msg) => msg.id !== userMessage.id)
+        .map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        }));
+
+      // Get AI response with context + student info
+      const aiResponse = await askQuestion(
+        message,
+        conversationHistory,
+        userContext
+      );
+
+      // Save AI response
+      const aiMessage = await prisma.message.create({
         data: {
-          userId,
-          title: message.substring(0, 50) || `Chat ${new Date().toLocaleDateString()}`,
+          conversationId: conversation.id,
+          role: "assistant",
+          content: aiResponse.answer,
+        },
+      });
+
+      // Update conversation's updatedAt timestamp
+      await prisma.conversation.update({
+        where: { id: conversation.id },
+        data: { updatedAt: new Date() },
+      });
+
+      return res.json({
+        success: true,
+        role,
+        conversation: {
+          id: conversation.id,
+          title: conversation.title,
+        },
+        userMessage: {
+          id: userMessage.id,
+          role: userMessage.role,
+          content: userMessage.content,
+          createdAt: userMessage.createdAt,
+        },
+        aiMessage: {
+          id: aiMessage.id,
+          role: aiMessage.role,
+          content: aiMessage.content,
+          from: aiResponse.from,
+          createdAt: aiMessage.createdAt,
         },
       });
     }
 
-    // Save user message
-    const userMessage = await prisma.message.create({
-      data: {
-        conversationId: conversation.id,
+    // ==================================
+    // Branch 2: GUEST → no chat history, general context only
+    // ==================================
+    // Guests do not have stored history; we only pass the current message.
+    const aiResponse = await askQuestion(message, [], userContext);
+
+    return res.json({
+      success: true,
+      role,
+      conversation: null,
+      userMessage: {
         role: "user",
         content: message,
       },
-    });
-
-    // Get conversation history for context
-    const previousMessages = await prisma.message.findMany({
-      where: { conversationId: conversation.id },
-      orderBy: { createdAt: "asc" },
-      take: -50, // Limit to last 50 messages for context
-    });
-
-    // Format history for AI (exclude current message)
-    const conversationHistory = previousMessages
-      .filter((msg) => msg.id !== userMessage.id)
-      .map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      }));
-
-    // Get AI response with context
-    const aiResponse = await askQuestion(message, conversationHistory);
-
-    // Save AI response
-    const aiMessage = await prisma.message.create({
-      data: {
-        conversationId: conversation.id,
+      aiMessage: {
         role: "assistant",
         content: aiResponse.answer,
-      },
-    });
-
-    // Update conversation's updatedAt timestamp
-    await prisma.conversation.update({
-      where: { id: conversation.id },
-      data: { updatedAt: new Date() },
-    });
-
-    res.json({
-      success: true,
-      conversation: {
-        id: conversation.id,
-        title: conversation.title,
-      },
-      userMessage: {
-        id: userMessage.id,
-        role: userMessage.role,
-        content: userMessage.content,
-        createdAt: userMessage.createdAt,
-      },
-      aiMessage: {
-        id: aiMessage.id,
-        role: aiMessage.role,
-        content: aiMessage.content,
         from: aiResponse.from,
-        createdAt: aiMessage.createdAt,
       },
     });
   } catch (error) {

@@ -6,7 +6,8 @@ const cors = require("cors");
 require("dotenv").config();
 const AdminRoutes = require("./Routes/AdminRoutes/adminAllRoutes");
 const UserRoutes = require("./Routes/UsersRoutes/UsersAllRoutes")
-// const AuthRoutes = require("./Routes/AuthRoutes/AuthAllRoutes");
+// CHANGE: Central auth routes (students + Google guests)
+const AuthRoutes = require("./Routes/AuthRoutes/AuthAllRoutes");
 
 
 
@@ -24,8 +25,8 @@ app.use(express.static(path.join(__dirname, "public")));
 // 🔗  All Routes
 app.use("/api/v1/admin", AdminRoutes);
 app.use("/api/v1/client", UserRoutes);
-// Google Auth Routes
-app.use("/auth" , require("./Routes/AuthRoutes/googleAuth"));
+// CHANGE: Auth Routes (students + guests via Google OAuth)
+app.use("/auth" , AuthRoutes);
 
 
 

@@ -5,7 +5,8 @@ const prisma = new PrismaClient();
 
 /**
  * Middleware to authenticate JWT tokens
- * Verifies the token and attaches user to req.user
+ * Verifies the token and attaches user (student or guest) to req.user
+ * CHANGE: Extended to expose student profile fields for personalized chat.
  */
 const authenticateToken = async (req, res, next) => {
   try {
@@ -26,6 +27,9 @@ const authenticateToken = async (req, res, next) => {
         avatar: true,
         role: true,
         blocked: true,
+        universityId: true,
+        department: true,
+        stage: true,
       },
     });
 

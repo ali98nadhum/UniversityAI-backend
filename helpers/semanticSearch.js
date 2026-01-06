@@ -7,12 +7,15 @@ const { askDeepSeek } = require("./AskDeepSeek");
 
 
 /**
- * Processes a question with optional conversation history
+ * Processes a question with optional conversation history and user context
  * @param {string} message - The current user message
  * @param {Array} conversationHistory - Array of previous messages in format [{role: "user"|"assistant", content: "..."}]
+ * @param {Object|null} userContext - Optional user context used to personalize AI responses
  * @returns {Promise<Object>} - Response object with from and answer fields
+ *
+ * CHANGE: userContext is forwarded to the LLM so students get personalized answers.
  */
-async function askQuestion(message, conversationHistory = []) {
+async function askQuestion(message, conversationHistory = [], userContext = null) {
   const userVector = await getVector(message);
 
   const allFaq = await prisma.fAQ.findMany();
@@ -37,7 +40,7 @@ async function askQuestion(message, conversationHistory = []) {
     return { from: "university", answer: bestMatch.answer };
   }
 
-  return await askDeepSeek(message, conversationHistory);
+  return await askDeepSeek(message, conversationHistory, userContext);
 }
 
 module.exports = { askQuestion };
