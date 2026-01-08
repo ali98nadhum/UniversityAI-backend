@@ -3,3 +3,6 @@ node_modules
 .env
 
 RATE_LIMITING.md
+
+# CHANGE: Ignore uploaded files
+uploads/

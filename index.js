@@ -19,6 +19,8 @@ const app = express();
 app.use(passport.initialize());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
+// CHANGE: Serve uploaded avatars statically
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 
 

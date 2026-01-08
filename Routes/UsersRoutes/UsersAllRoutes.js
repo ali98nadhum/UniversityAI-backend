@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
 
-// Admin Routes
+// CHANGE: User routes
 router.use("/chat", require("./AskRoutes"));
-
+// CHANGE: Profile management routes (avatar, update info, delete account)
+router.use("/profile", require("./ProfileRoutes"));
 
 module.exports = router;

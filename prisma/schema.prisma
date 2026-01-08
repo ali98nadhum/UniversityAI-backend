@@ -7,7 +7,6 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-// CHANGE: Extend roles to support students and guests in addition to admins
 enum Role {
     STUDENT
     GUEST
@@ -15,33 +14,22 @@ enum Role {
     SUPER_ADMIN
 }
 
-// CHANGE: Extend User model to support student credentials and profile
 model User {
-    id            Int           @id @default(autoincrement())
-    email         String?       @unique
-    // For student login
-    universityId  String?       @unique
+    id            Int            @id @default(autoincrement())
+    email         String?        @unique
+    universityId  String?        @unique
     passwordHash  String?
-
-    // Common profile fields
     name          String?
     department    String?
     stage         String?
     avatar        String?
-
-    // For Google guest login (optional)
-    googleId      String?       @unique
-
-    blocked       Boolean       @default(false)
-    // STUDENT | GUEST | ADMIN | SUPER_ADMIN
-    role          Role          @default(STUDENT)
-    createdAt     DateTime      @default(now())
-    updatedAt     DateTime      @updatedAt
-
-    // Chat history (only used for students in controllers)
+    googleId      String?        @unique
+    blocked       Boolean        @default(false)
+    role          Role           @default(STUDENT)
+    createdAt     DateTime       @default(now())
+    updatedAt     DateTime       @updatedAt
     conversations Conversation[]
-    // CHANGE: Track daily usage for rate limiting (GUEST users only)
-    guestUsage     GuestUsage[]
+    guestUsage    GuestUsage[]
 }
 
 model FAQ {
@@ -53,12 +41,12 @@ model FAQ {
 }
 
 model Conversation {
-    id        Int      @id @default(autoincrement())
+    id        Int       @id @default(autoincrement())
     userId    Int
-    title     String?  // Optional title for the conversation
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    title     String?
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
     messages  Message[]
 
     @@index([userId])
@@ -67,7 +55,7 @@ model Conversation {
 model Message {
     id             Int          @id @default(autoincrement())
     conversationId Int
-    role           String       // "user" or "assistant"
+    role           String
     content        String
     createdAt      DateTime     @default(now())
     conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
@@ -75,15 +63,14 @@ model Message {
     @@index([conversationId])
 }
 
-// CHANGE: Track daily question usage for GUEST users (rate limiting)
 model GuestUsage {
-    id        Int      @id @default(autoincrement())
-    userId    Int
-    date      DateTime @default(now()) // Date only (no time)
-    questionCount Int  @default(0)
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    id            Int      @id @default(autoincrement())
+    userId        Int
+    date          DateTime @default(now())
+    questionCount Int      @default(0)
+    user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
 
     @@unique([userId, date])
     @@index([userId])
