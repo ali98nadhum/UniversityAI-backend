@@ -1,5 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const { askQuestion } = require("../../helpers/semanticSearch");
+// CHANGE: Import rate limiter for guest users
+const { incrementGuestUsage } = require("../../Utils/rateLimiter");
 
 const prisma = new PrismaClient();
 
@@ -250,6 +252,13 @@ module.exports.sendMessage = async (req, res) => {
           from: aiResponse.from,
           createdAt: aiMessage.createdAt,
         },
+        // CHANGE: Students have unlimited access
+        rateLimit: {
+          remaining: null,
+          limit: null,
+          used: null,
+          unlimited: true,
+        },
       });
     }
 
@@ -257,7 +266,15 @@ module.exports.sendMessage = async (req, res) => {
     // Branch 2: GUEST → no chat history, general context only
     // ==================================
     // Guests do not have stored history; we only pass the current message.
+    // CHANGE: Rate limiting is handled by middleware, but we track usage after successful request
     const aiResponse = await askQuestion(message, [], userContext);
+
+    // CHANGE: Increment guest usage counter after successful AI response
+    await incrementGuestUsage(userId);
+
+    // Get remaining questions for response
+    const { checkGuestLimit } = require("../../Utils/rateLimiter");
+    const limitInfo = await checkGuestLimit(userId);
 
     return res.json({
       success: true,
@@ -271,6 +288,12 @@ module.exports.sendMessage = async (req, res) => {
         role: "assistant",
         content: aiResponse.answer,
         from: aiResponse.from,
+      },
+      // CHANGE: Include rate limit info in response for frontend
+      rateLimit: {
+        remaining: limitInfo.remaining,
+        limit: limitInfo.limit,
+        used: limitInfo.used,
       },
     });
   } catch (error) {

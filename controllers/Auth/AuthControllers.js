@@ -103,12 +103,15 @@ module.exports.loginStudent = async (req, res) => {
     });
 
     if (!user || !user.passwordHash) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
+  return res.status(401).json({
+    error: "The university ID or password is incorrect."
+  });
+}
+
 
     const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(401).json({ error: "The university ID or password is incorrect." });
     }
 
     const token = generateToken(user);

@@ -40,6 +40,8 @@ model User {
 
     // Chat history (only used for students in controllers)
     conversations Conversation[]
+    // CHANGE: Track daily usage for rate limiting (GUEST users only)
+    guestUsage     GuestUsage[]
 }
 
 model FAQ {
@@ -71,4 +73,19 @@ model Message {
     conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
     @@index([conversationId])
+}
+
+// CHANGE: Track daily question usage for GUEST users (rate limiting)
+model GuestUsage {
+    id        Int      @id @default(autoincrement())
+    userId    Int
+    date      DateTime @default(now()) // Date only (no time)
+    questionCount Int  @default(0)
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([userId, date])
+    @@index([userId])
+    @@index([date])
 }

@@ -8,12 +8,15 @@ const {
   deleteConversation,
 } = require("../../controllers/User/ChatControllers");
 const { authenticateToken } = require("../../Utils/authMiddleware");
+// CHANGE: Add rate limiting middleware for guest users
+const { guestRateLimitMiddleware } = require("../../Utils/rateLimiter");
 
 // Apply authentication middleware to all routes
 router.use(authenticateToken);
 
-// Send a message (creates new conversation if no conversationId provided)
-router.post("/", sendMessage);
+// CHANGE: Apply rate limiting only to the send message endpoint (guests only)
+// Students have unlimited access, so middleware will skip them
+router.post("/", guestRateLimitMiddleware, sendMessage);
 
 // Conversation management routes
 router.post("/conversations", createConversation);
