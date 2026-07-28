@@ -31,7 +31,7 @@ module.exports.registerStudent = async (req, res) => {
     if (!universityId || !password) {
       return res
         .status(400)
-        .json({ error: "universityId and password are required" });
+        .json({ error: "الرجاء إدخال رقم الجامعة وكلمة المرور" });
     }
 
     const existing = await prisma.user.findFirst({
@@ -43,7 +43,7 @@ module.exports.registerStudent = async (req, res) => {
     if (existing) {
       return res
         .status(409)
-        .json({ error: "Student with this universityId or email already exists" });
+        .json({ error: "رقم الجامعة أو البريد الإلكتروني مستخدم بالفعل" });
     }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
@@ -63,7 +63,7 @@ module.exports.registerStudent = async (req, res) => {
     const token = generateToken(user);
 
     return res.status(201).json({
-      message: "Student registered successfully",
+      message: "تم إنشاء الحساب بنجاح",
       token,
       user: {
         id: user.id,
@@ -76,7 +76,7 @@ module.exports.registerStudent = async (req, res) => {
     });
   } catch (error) {
     console.error("Error registering student:", error);
-    return res.status(500).json({ error: "Failed to register student" });
+    return res.status(500).json({ error: "فشل في إنشاء الحساب" });
   }
 };
 
@@ -92,7 +92,7 @@ module.exports.loginStudent = async (req, res) => {
     if (!universityId || !password) {
       return res
         .status(400)
-        .json({ error: "universityId and password are required" });
+        .json({ error: "الرجاء إدخال رقم الجامعة وكلمة المرور" });
     }
 
     const user = await prisma.user.findFirst({
@@ -103,21 +103,22 @@ module.exports.loginStudent = async (req, res) => {
     });
 
     if (!user || !user.passwordHash) {
-  return res.status(401).json({
-    error: "The university ID or password is incorrect."
-  });
-}
-
+      return res.status(401).json({
+        error: "رقم الجامعة أو كلمة المرور غير صحيحة"
+      });
+    }
 
     const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) {
-      return res.status(401).json({ error: "The university ID or password is incorrect." });
+      return res.status(401).json({ 
+        error: "رقم الجامعة أو كلمة المرور غير صحيحة" 
+      });
     }
 
     const token = generateToken(user);
 
     return res.json({
-      message: "Login successful",
+      message: "تم تسجيل الدخول بنجاح",
       token,
       user: {
         id: user.id,
@@ -126,11 +127,13 @@ module.exports.loginStudent = async (req, res) => {
         department: user.department,
         stage: user.stage,
         role: user.role,
+        email: user.email,
+        avatar: user.avatar,
       },
     });
   } catch (error) {
     console.error("Error logging in student:", error);
-    return res.status(500).json({ error: "Failed to login student" });
+    return res.status(500).json({ error: "فشل في تسجيل الدخول" });
   }
 };
 

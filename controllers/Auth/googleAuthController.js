@@ -7,9 +7,10 @@ exports.googleCallback = (req, res) => {
     { expiresIn: "7d" }
   );
 
-  res.json({
-    message: "Login successful",
-    token,
-    user: req.user,
-  });
+  const redirectUrl =
+    `${process.env.FRONTEND_URL}/auth/google/callback` +
+    `?token=${token}` +
+    `&user=${encodeURIComponent(JSON.stringify(req.user))}`;
+
+  res.redirect(redirectUrl);
 };

@@ -10,12 +10,22 @@ const UserRoutes = require("./Routes/UsersRoutes/UsersAllRoutes")
 const AuthRoutes = require("./Routes/AuthRoutes/AuthAllRoutes");
 
 
+const app = express();
+
+
+app.use(cors({
+  origin: true,  
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+
 
 
 // --------------------
 // Middlewares
 // --------------------
-const app = express();
 app.use(passport.initialize());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));

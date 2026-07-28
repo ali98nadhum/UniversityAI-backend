@@ -71,7 +71,7 @@ async function askDeepSeek(message, conversationHistory = [], userContext = null
     };
   } catch (err) {
     console.error("DeepSeek API Error:", err.message);
-    return { from: "error", answer: "حدث خطأ في الاتصال بالذكاء الاصطناعي." };
+    return { from: "error", answer: "حدث خطأ في الاتصال بالذكاء الاصطناعي.", error:err.message };
   }
 }
 
